@@ -1,0 +1,551 @@
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { MailerService } from '../mailer.service';
+
+@Component({
+  selector: 'app-mail',
+  templateUrl: './mail.component.html',
+  styleUrls: ['./mail.component.css']
+})
+export class MailComponent implements OnInit {
+
+  constructor(private ser:MailerService, private route:Router) { }
+  emails:any=[];
+  arraybox:any=[];
+  active:any;
+  getmsg:any;
+  alert:any;
+  singleid:any=0;
+  ngOnInit(): void {
+    this.index('2'); 
+  }
+
+      index(tab:any):any{
+        if(tab==='1'){
+          this.active = tab;
+          this.ser.mails(this.active).subscribe((res:any) => {
+            this.emails = res.data; 
+            this.alert = document.getElementById('msg');
+            this.alert.innerHTML = '';
+            });
+        }
+        if(tab==='2'){
+          this.active = tab;
+          this.ser.mails(this.active).subscribe((res:any) => {
+            this.emails = res.data; 
+           
+            if(this.emails.length==0){
+              this.alert = document.getElementById('msg');
+              this.alert.innerHTML = 'You Have No Messages Today<br> 😎😺👍';
+            }
+            else{
+              this.alert.innerHTML='';
+            }
+            });
+        }
+        if(tab==='0'){
+          this.active = tab;
+          this.ser.mails(this.active).subscribe((res:any) => {
+            this.emails = res.data;
+            this.alert.innerHTML='';
+            if(this.emails.length==0){
+              this.alert = document.getElementById('msg');
+              this.alert.innerHTML = 'You Have No Unread Messages <br> 😎😺👍';
+            }
+            else{
+              this.alert.innerHTML=''
+            }
+            });
+        }
+
+      }
+
+
+  dlt(typ?:any,id?:any){
+    if(typ==1){
+      this.singleid = id;
+    }
+    if(typ==2){
+      this.ser.delete(this.singleid).subscribe((res:any) => {
+        this.singleid=0;
+        this.ser.mails(this.active).subscribe((res:any) => {   
+          this.emails = res.data;     
+          });
+          
+      });
+    }
+    if(typ==3){
+        var checkboxes:any = document.querySelectorAll('input[name=cbox]:checked')
+        for (var i = 0; i < checkboxes.length; i++) {
+        this.arraybox.push(checkboxes[i].value)
+      }
+  }
+    if(typ==4){
+      this.ser.delete(this.arraybox).subscribe((res:any) => {
+        this.arraybox=[];
+        this.ser.mails(this.active).subscribe((res:any) => {
+          this.emails = res.data;     
+          });
+          
+      });
+      
+   
+  }
+
+}
+allempty(){
+ setTimeout(() => {
+  var checkboxes:any = document.querySelectorAll('input[name=cbox]:checked')
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = false;
+}
+  this.arraybox=[];
+  this.singleid=0;
+  
+ }, 500);
+}
+      getmsgs(val:any,id:any,name?:any,mail?:any){
+        this.getmsg = '<h3> <i class="fa fa-user text-primary"></i> '+name+'</h3> <h5> <i class="fa fa-envelope text-danger"></i> <a class="text-danger" href="mailto:'+mail+'">'+mail+'</a> </h5>';
+        var mesg:any = document.getElementById('mesg');
+        mesg.innerHTML = '<h5> <i class="fa fa-comment text-warning"></i> ' + val +' </h5>';
+        this.ser.update(id,1).subscribe((res:any) => {    
+          this.ser.mails(this.active).subscribe((res:any) => {
+            this.emails = res.data; 
+            }); 
+        });
+
+      }
+      unread(id:any){
+       
+        this.ser.update(id,0).subscribe((res:any) => {    
+          this.ser.mails(this.active).subscribe((res:any) => {
+            this.emails = res.data; 
+            }); 
+        });
+      }
+      logout(){
+        localStorage.setItem('permit','');
+        this.route.navigate(['/']);
+      }
+      refresh(){
+        this.ser.mails(this.active).subscribe((res:any) => {
+          this.emails = res.data; 
+          if(this.emails.length!=0){
+            this.alert.innerHTML=''
+          }
+          });
+      }
+}
+
+
+
+
+
+
+-----------service----------------------------
+  update(id:any,stage:any){
+    var formdata = new FormData();
+      formdata.append('id', id);
+      formdata.append('stage', stage);
+    return this.http.post(`${environment.baseurl}scriptmailservice/update.php`,formdata)
+  }
+
+-----------service end----------------------------
+
+------------------------html-----------------------------
+<nav class="menu" tabindex="0">
+	<div class="smartphone-menu-trigger"></div>
+  <header class="avatar">
+		<img src="https://media.licdn.com/dms/image/D4D03AQGHAIH7N-oxxA/profile-displayphoto-shrink_200_200/0/1675449819787?e=1682553600&v=beta&t=mvE4d3XUNA59EzuMC9___fokU5PSwdSraq0qgmovwOM" />
+    <h2>Suneelam T.</h2>
+  </header>
+	<ul >
+    <li tabindex="0" class="icon-dashboard" (click)="index('1')" [ngClass]="{trans: this.active==='1'}"><span>All</span></li>
+    <li tabindex="0" class="icon-customers" [ngClass]="{trans: this.active==='2'}" (click)="index('2')"><span>Today</span></li>
+    <li tabindex="0" class="icon-users" [ngClass]="{trans: this.active==='0'}" (click)="index('0')" ><span>Unread</span></li>
+    <li tabindex="0" class="icon-settings" data-bs-toggle="modal" data-bs-target="#exampleModal"  (click)="dlt(3)"><span>Bulk Delete</span></li>
+    <li tabindex="0" class="icon-cycle" (click)="refresh()"><span>Refresh</span></li>
+    <!-- <li tabindex="0" class="icon-cycle"><div id="google_translate_element"></div></li> -->
+    <li tabindex="0" class="icon-logout" (click)="logout()"><span>logout</span></li>
+  </ul>
+</nav>
+
+<main>
+  <div class="shadow text-center" style="background-color: papayawhip;">
+    <h1 class="text-danger"><span class="blue">&lt;</span>Script<span class="blue">&gt;</span> <span class="text-success">Mails</span></h1>
+</div>
+  <!-- <div class="tabs">
+    <table class="table table-striped table-dark" style="overflow-x: scroll !important;">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Message</th>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let key of this.emails">
+                
+                <td> <input type="checkbox" name="cbox" id="cbox" value="{{key[0]}}"> {{key[0]}}</td>
+                <td>{{key[1]}}</td>
+                <td>{{key[2]}}</td>
+                <td>{{key[3] | slice:0:10}} </td>
+                <td>{{key[4]}}</td>
+                <td>{{key[5]  | date: 'EEEE, MMMM d, y' }}</td>
+                <td> <a style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#viewModal" (click)="getmsgs(key[3],key[0])"> <i class="fa fa-eye text-info"></i> </a> | <a style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#exampleModal" (click)="dlt(1,key[0])"> <i class="fa fa-trash text-danger"></i> </a></td>
+            </tr>
+           
+        </tbody>
+    </table>
+</div> -->
+<div>
+  <div class="row">
+    <div class="col-md-4 text-center shadow svgb"  *ngFor="let key of this.emails">
+      <svg data-bs-toggle="modal" data-bs-target="#viewModal" (click)="getmsgs(key[3],key[0],key[1],key[2])" width="93px" height="93px" viewBox="7.086 -169.483 1277.149 1277.149" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" xmlns="http://www.w3.org/2000/svg" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path fill="none" d="M1138.734 931.095h.283M1139.017 931.095h-.283"></path><path d="M1179.439 7.087c57.543 0 104.627 47.083 104.627 104.626v30.331l-145.36 103.833-494.873 340.894L148.96 242.419v688.676h-37.247c-57.543 0-104.627-47.082-104.627-104.625V111.742C7.086 54.198 54.17 7.115 111.713 7.115l532.12 394.525L1179.41 7.115l.029-.028z" fill="#022cd4"></path><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#a)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><path fill="#26aef2" d="M148.96 242.419v688.676h989.774V245.877L643.833 586.771z"></path><path fill="#26aef2" d="M148.96 931.095l494.873-344.324-2.24-1.586L148.96 923.527z"></path><path fill="#26aef2" d="M1138.734 245.877l.283 685.218-495.184-344.324z"></path><path d="M1284.066 142.044l.17 684.51c-2.494 76.082-35.461 103.238-145.219 104.514l-.283-685.219 145.36-103.833-.028.028z" fill="#022cd4"></path><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#b)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#c)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#d)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#e)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#f)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#g)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><linearGradient id="h" gradientUnits="userSpaceOnUse" x1="1959.712" y1="737.107" x2="26066.213" y2="737.107" gradientTransform="matrix(.0283 0 0 -.0283 248.36 225.244)"><stop offset="0" stop-color="#26aef2"></stop><stop offset="1" stop-color="#26aef2"></stop></linearGradient><path fill="url(#h)" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path><path fill="#26aef2" d="M111.713 7.087l532.12 394.525L1179.439 7.087z"></path></g></svg>
+  <ul>
+    <li><input type="checkbox" name="cbox" id="cbox" value="{{key[0]}}"> {{key[2]}}</li>
+    <li>{{key[1]}}</li>
+    <li><a data-title="view" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#viewModal" (click)="getmsgs(key[3],key[0],key[1],key[2])"> <i class="fa fa-eye text-info"></i> </a> | <a style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#exampleModal" (click)="dlt(1,key[0])" data-title="delete"> <i class="fa fa-trash text-danger"></i> </a> | <a *ngIf="key[5]==0" style="cursor: pointer;" data-title="unread message"> <i class="fa fa-circle text-primary"></i> </a>  <a *ngIf="key[5]!=0" style="cursor: pointer;" (click)="unread(key[0])"> <i class="fa fa-eye-slash text-light" data-title="mark as unread"></i> </a></li>
+  </ul>
+    </div>
+  </div>
+  <h3 class="text-center text-light mt-4" id="msg"></h3>
+</div>
+
+<!-- <div class="container bg-dark text-light">
+  <div class="row" *ngFor="let key of this.emails">
+    <div class="col-sm-8">{{key[1]}} &nbsp; {{key[2]}} &nbsp; {{key[3]}}</div>
+    <div class="col-sm-4"><a style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#viewModal" (click)="getmsgs(key[3],key[0])"> <i class="fa fa-eye text-info"></i> </a> | <a style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#exampleModal" (click)="dlt(1,key[0])"> <i class="fa fa-trash text-danger"></i> </a></div>
+  </div>
+</div> -->
+
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal-dialog">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <input type="hidden" id="did">
+        Are you sure want to delete this mail?
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+      <button type="button" *ngIf="this.arraybox==''" class="btn btn-outline-danger" data-bs-dismiss="modal" (click)="dlt(2)">Delete</button>
+      <button type="button" *ngIf="this.arraybox!=''" class="btn btn-outline-danger" data-bs-dismiss="modal" (click)="dlt(4)">Deletes</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+<div class="modal-dialog">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title text-success" id="viewModalLabel">Mail <i class="fa fa-envelope"></i></h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div [innerHTML]="this.getmsg"></div> 
+        <div id="mesg" class="border border-dark" style="height: 300px; overflow-y: scroll;"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+------------------------html end-----------------------------
+
+
+------------back end--------------------------------
+$sts = $_REQUEST['stage'];
+$sql = "UPDATE `Mails` SET `status` = $sts WHERE `Mails`.`Id` = $id;";
+
+------------back end--------------------------------
+
+
+
+/* body {
+  background: #ffea92;
+  margin: 0;
+  font-family: "Open Sans", Helvetica Neue, Helvetica, Arial, sans-serif;
+  color: #fff;
+  padding-left: 240px;
+} */
+main {
+  position: relative;
+  height: 100vh;
+  margin-left: 17.5%;
+  overflow: auto !important;
+}
+main .helper {
+  background: rgba(0,0,0,0.2);
+  color: #ffea92;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%,-50%,0);
+  padding: 1.2em 2em;
+  text-align: center;
+  border-radius: 20px;
+  font-size: 2em;
+  font-weight: bold;
+}
+main .helper span {
+  color: rgba(0,0,0,0.2);
+  font-size: 0.4em;
+  display: block;
+}
+.menu {
+  background: #5bc995;
+  height: 100vh;
+  width: 240px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  outline: none;
+}
+.menu .avatar {
+  background: rgba(0,0,0,0.1);
+  padding: 2em 0.5em;
+  text-align: center;
+}
+.menu .avatar img {
+  width: 100px;
+  border-radius: 50%;
+
+  border: 4px solid #ffea92;
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.2);
+}
+.menu .avatar h2 {
+  font-weight: normal;
+  margin-bottom: 0;
+}
+.menu ul {
+  list-style: none;
+  padding: 0.5em 0;
+  margin: 0;
+}
+.menu ul li {
+  padding: 0.5em 1em 0.5em 3em;
+  font-size: 0.95em;
+  font-weight: regular;
+  background-repeat: no-repeat;
+  background-position: left 15px center;
+  background-size: auto 20px;
+  transition: all 0.15s linear;
+  cursor: pointer;
+}
+.menu ul li.icon-dashboard {
+  background-image: url("http://www.entypo.com/images//gauge.svg");
+}
+.menu ul li.icon-customers {
+  background-image: url("http://www.entypo.com/images//light-up.svg");
+}
+.menu ul li.icon-users {
+  background-image: url("http://www.entypo.com/images//eye-with-line.svg");
+}
+.menu ul li.icon-settings {
+  background-image: url("http://www.entypo.com/images//trash.svg");
+}
+.menu ul li.icon-logout {
+  background-image: url("http://www.entypo.com/images//align-left.svg");
+}
+.menu ul li.icon-cycle {
+  background-image: url("http://www.entypo.com/images//cycle.svg");
+}
+.menu ul li:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+.menu ul li:focus {
+  outline: none;
+}
+@media screen and (max-width: 900px) and (min-width: 400px) {
+  body {
+    padding-left: 90px;
+ }
+  .menu {
+    width: 90px;
+ }
+  .menu .avatar {
+    padding: 0.5em;
+    position: relative;
+ }
+  .menu .avatar img {
+    width: 60px;
+ }
+  .menu .avatar h2 {
+    opacity: 0;
+    position: absolute;
+    top: 50%;
+    left: 100px;
+    margin: 0;
+    min-width: 200px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.4);
+    transform: translate3d(-20px,-50%,0);
+    transition: all 0.15s ease-in-out;
+ }
+  .menu .avatar:hover h2 {
+    opacity: 1;
+    transform: translate3d(0px,-50%,0);
+ }
+  .menu ul li {
+    height: 60px;
+    background-position: center center;
+    background-size: 30px auto;
+    position: relative;
+ }
+  .menu ul li span {
+    opacity: 0;
+    position: absolute;
+    background: rgba(0,0,0,0.5);
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    top: 50%;
+    left: 80px;
+    transform: translate3d(-15px,-50%,0);
+    transition: all 0.15s ease-in-out;
+ }
+  .menu ul li span:before {
+    content: '';
+    width: 0;
+    height: 0;
+    position: absolute;
+    top: 50%;
+    left: -5px;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 5px solid rgba(0,0,0,0.5);
+    transform: translateY(-50%);
+ }
+  .menu ul li:hover span {
+    opacity: 1;
+    transform: translate3d(0px,-50%,0);
+ }
+}
+@media screen and (max-width: 400px) {
+  body {
+    padding-left: 0;
+ }
+  .menu {
+    width: 230px;
+    box-shadow: 0 0 0 100em rgba(0,0,0,0);
+    transform: translate3d(-230px,0,0);
+    transition: all 0.3s ease-in-out;
+ }
+  .menu .smartphone-menu-trigger {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    left: 100%;
+    background: #5bc995;
+ }
+  .menu .smartphone-menu-trigger:before, .menu .smartphone-menu-trigger:after {
+    content: '';
+    width: 50%;
+    height: 2px;
+    background: #fff;
+    border-radius: 10px;
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate3d(-50%,-50%,0);
+ }
+  .menu .smartphone-menu-trigger:after {
+    top: 55%;
+    transform: translate3d(-50%,-50%,0);
+ }
+  .menu ul li {
+    padding: 1em 1em 1em 3em;
+    font-size: 1.2em;
+ }
+  .menu:focus {
+    transform: translate3d(0,0,0);
+    box-shadow: 0 0 0 100em rgba(0,0,0,0.6);
+ }
+  .menu:focus .smartphone-menu-trigger {
+    pointer-events: none;
+ }
+}
+.trans{
+  /* transform:scale(1.3) */
+  font-weight: 800;
+}
+.tabs{
+  height: 500px;
+  overflow: scroll;
+}
+ul {
+  list-style-type: none;
+}
+.svgb{
+  /* background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' xmlns:svgjs='http://svgjs.com/svgjs' width='1440' height='560' preserveAspectRatio='none' viewBox='0 0 1440 560'%3e%3cg mask='url(%26quot%3b%23SvgjsMask1006%26quot%3b)' fill='none'%3e%3crect width='1440' height='560' x='0' y='0' fill='rgba(170%2c 242%2c 201%2c 1)'%3e%3c/rect%3e%3cpath d='M424.851%2c501.298C476.091%2c499.261%2c526.864%2c478.483%2c551.315%2c433.408C574.84%2c390.04%2c560.061%2c339.293%2c536.135%2c296.145C511.251%2c251.269%2c476.162%2c204.895%2c424.851%2c205.343C374.009%2c205.787%2c343.288%2c254.61%2c316.882%2c298.059C288.9%2c344.102%2c254.406%2c396.625%2c279.683%2c444.207C305.829%2c493.423%2c369.165%2c503.512%2c424.851%2c501.298' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float1'%3e%3c/path%3e%3cpath d='M1474.2709913804974 245.90196214888738L1354.9688840482613 179.77172419723914 1288.838646096613 299.0738315294753 1408.1407534288492 365.2040694811235z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float2'%3e%3c/path%3e%3cpath d='M1301.5302339385837 354.83149876065914L1350.418179438038 220.5129724173802 1167.2117075953047 305.94355326120484z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float3'%3e%3c/path%3e%3cpath d='M463.6579033768842 183.5190587163041L619.0980667571981 90.32269108902821 481.8932259088634 11.107439291122404z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float2'%3e%3c/path%3e%3cpath d='M767.0753938982763 319.8038342101106L871.0341404209552 327.07333792808504 878.3036441389296 223.11459140540614 774.3448976162507 215.84508768743174z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float3'%3e%3c/path%3e%3cpath d='M921.5504437371279 404.67187035444823L806.6142615585221 455.71356134536137 894.4114801274017 521.8735109857007z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float1'%3e%3c/path%3e%3c/g%3e%3cdefs%3e%3cmask id='SvgjsMask1006'%3e%3crect width='1440' height='560' fill='white'%3e%3c/rect%3e%3c/mask%3e%3cstyle%3e %40keyframes float1 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(-10px%2c 0)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float1 %7b animation: float1 5s infinite%3b %7d %40keyframes float2 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(-5px%2c -5px)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float2 %7b animation: float2 4s infinite%3b %7d %40keyframes float3 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(0%2c -10px)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float3 %7b animation: float3 6s infinite%3b %7d %3c/style%3e%3c/defs%3e%3c/svg%3e");
+  background-size: cover; */
+  background: rgba(0,0,0,0.4);
+  color: white;
+  font-family: monospace;
+  transition: 0.5s ease;
+  cursor: pointer;
+
+}
+.svgb:hover{
+  /* background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' xmlns:svgjs='http://svgjs.com/svgjs' width='1440' height='560' preserveAspectRatio='none' viewBox='0 0 1440 560'%3e%3cg mask='url(%26quot%3b%23SvgjsMask1006%26quot%3b)' fill='none'%3e%3crect width='1440' height='560' x='0' y='0' fill='rgba(170%2c 242%2c 201%2c 1)'%3e%3c/rect%3e%3cpath d='M424.851%2c501.298C476.091%2c499.261%2c526.864%2c478.483%2c551.315%2c433.408C574.84%2c390.04%2c560.061%2c339.293%2c536.135%2c296.145C511.251%2c251.269%2c476.162%2c204.895%2c424.851%2c205.343C374.009%2c205.787%2c343.288%2c254.61%2c316.882%2c298.059C288.9%2c344.102%2c254.406%2c396.625%2c279.683%2c444.207C305.829%2c493.423%2c369.165%2c503.512%2c424.851%2c501.298' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float1'%3e%3c/path%3e%3cpath d='M1474.2709913804974 245.90196214888738L1354.9688840482613 179.77172419723914 1288.838646096613 299.0738315294753 1408.1407534288492 365.2040694811235z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float2'%3e%3c/path%3e%3cpath d='M1301.5302339385837 354.83149876065914L1350.418179438038 220.5129724173802 1167.2117075953047 305.94355326120484z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float3'%3e%3c/path%3e%3cpath d='M463.6579033768842 183.5190587163041L619.0980667571981 90.32269108902821 481.8932259088634 11.107439291122404z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float2'%3e%3c/path%3e%3cpath d='M767.0753938982763 319.8038342101106L871.0341404209552 327.07333792808504 878.3036441389296 223.11459140540614 774.3448976162507 215.84508768743174z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float3'%3e%3c/path%3e%3cpath d='M921.5504437371279 404.67187035444823L806.6142615585221 455.71356134536137 894.4114801274017 521.8735109857007z' fill='rgba(0%2c 255%2c 129%2c 0.4)' class='triangle-float1'%3e%3c/path%3e%3c/g%3e%3cdefs%3e%3cmask id='SvgjsMask1006'%3e%3crect width='1440' height='560' fill='white'%3e%3c/rect%3e%3c/mask%3e%3cstyle%3e %40keyframes float1 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(-10px%2c 0)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float1 %7b animation: float1 5s infinite%3b %7d %40keyframes float2 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(-5px%2c -5px)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float2 %7b animation: float2 4s infinite%3b %7d %40keyframes float3 %7b 0%25%7btransform: translate(0%2c 0)%7d 50%25%7btransform: translate(0%2c -10px)%7d 100%25%7btransform: translate(0%2c 0)%7d %7d .triangle-float3 %7b animation: float3 6s infinite%3b %7d %3c/style%3e%3c/defs%3e%3c/svg%3e");
+  background-size: cover; */
+  transform:scale(1.1);
+
+}
+
+[data-title]:hover:after {
+  opacity: 1;
+  transition: all 0.1s ease 0.5s;
+  visibility: visible;
+}
+[data-title]:after {
+  content: attr(data-title);
+  background-color: #5bc995;
+  color: #111;
+  font-size: 110%;
+  position: absolute;
+  padding: 1px 5px 2px 5px;
+  bottom: -1.6em;
+  left: 100%;
+  white-space: nowrap;
+  box-shadow: 1px 1px 3px #222222;
+  opacity: 0;
+  border: 1px solid #111111;
+  z-index: 99999;
+  visibility: hidden;
+}
+[data-title] {
+  position: relative;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
