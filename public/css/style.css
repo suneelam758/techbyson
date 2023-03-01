@@ -186,7 +186,7 @@ a:focus {
     
     .navbar .navbar-brand {
         color: #ffffff;
-        font-size:30px;
+        font-size:30px !important;
     }
     
     .navbar.nav-sticky .navbar-brand {
